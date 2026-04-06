@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Puzzle Solver</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom right, #020617, #312e81, #581c87);
+            min-height: 100vh;
+            color: white;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeInDown 0.5s ease-out;
+        }
+
+        .header h1 {
+            background: linear-gradient(to right, #22d3ee, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .header p {
+            color: #94a3b8;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        .modal::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom right, rgba(6, 182, 212, 0.1), rgba(168, 85, 247, 0.1), rgba(236, 72, 153, 0.1));
+            border-radius: 1rem;
+            pointer-events: none;
+        }
+
+        .modal-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .modal h2 {
+            background: linear-gradient(to right, #22d3ee, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .presets {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .preset-btn {
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(30, 41, 59, 0.5);
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(51, 65, 85, 0.5);
+            border-color: rgba(34, 211, 238, 0.5);
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(to right, #06b6d4, #3b82f6);
+            border-color: #22d3ee;
+            color: white;
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+        }
+
+        .custom-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            color: #cbd5e1;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+        }
+
+        .grid-preview {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            background: rgba(30, 41, 59, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .grid-preview p:first-child {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .grid-preview .size {
+            background: linear-gradient(to right, #22d3ee, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .grid-preview .total {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: none;
+            background: linear-gradient(to right, #06b6d4, #3b82f6, #7c3aed);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(to right, #06b6d4, #3b82f6, #7c3aed);
+            border-radius: 25px;
+            padding: 5px;
+
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(to right, #64748b, #475569);
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
+        }
+
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Card */
+        .card {
+            position: relative;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom right, rgba(6, 182, 212, 0.1), rgba(168, 85, 247, 0.1));
+            border-radius: 1rem;
+            pointer-events: none;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .title-bar {
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(to bottom, #22d3ee, #3b82f6);
+            border-radius: 2px;
+        }
+
+        .grid-size-badge {
+            font-size: 0.875rem;
+            color: #22d3ee;
+            font-weight: normal;
+        }
+
+        .resize-btn {
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            background: rgba(51, 65, 85, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .resize-btn:hover {
+            background: rgba(71, 85, 105, 0.5);
+            color: white;
+        }
+
+        /* Puzzle Grid */
+        .puzzle-container {
+            position: relative;
+            z-index: 1;
+            gap: 5px;
+        }
+
+        .grid-wrapper {
+            max-height: 500px;
+            overflow: auto;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 2rem;
+            
+        }
+
+        .puzzle-grid {
+            display: inline-block;
+        }
+
+        .grid-row {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .grid-cell {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            font-weight: 600;
+            text-transform: uppercase;
+            border-radius: 0.5rem;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .grid-cell:hover {
+            background: rgba(51, 65, 85, 0.6);
+            border-color: rgba(34, 211, 238, 0.3);
+        }
+
+        .grid-cell:focus {
+            outline: none;
+            background: rgba(51, 65, 85, 0.8);
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+        }
+
+        .grid-cell.highlighted {
+            background: linear-gradient(to bottom right, rgba(6, 182, 212, 0.4), rgba(59, 130, 246, 0.4));
+            border: 2px solid #22d3ee;
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .grid-cell.small {
+            width: 32px;
+            height: 32px;
+            font-size: 0.875rem;
+        }
+
+        .grid-cell.tiny {
+            width: 24px;
+            height: 24px;
+            font-size: 0.75rem;
+        }
+
+        .grid-tip {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        /* Find Words Button */
+        .find-words-btn {
+            width: 100%;
+            height: 90%;
+            padding: 0.8rem;
+            border-radius: 0.75rem;
+            border: none;
+            background: linear-gradient(to right, #06b6d4, #3b82f6, #7c3aed);
+            color: white;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 5px;
+
+        }
+
+        .find-words-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
+        }
+
+        .find-words-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .find-words-btn.loading::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, #22d3ee, #a78bfa);
+            opacity: 0.3;
+            animation: pulse 1.5s ease-in-out infinite;
+            filter: blur(20px);
+        }
+
+        .btn-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Dictionary */
+        .dictionary-controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .dictionary-controls button {
+            flex: 1;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: linear-gradient(to right, #475569, #334155);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+        }
+
+        .dictionary-controls button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+        }
+
+        #uploadBtn {
+            background: linear-gradient(to right, #0ea5e9, #3b82f6, #06b6d4);
+            border-color: rgba(6, 182, 212, 0.5);
+        }
+
+        #uploadBtn:hover {
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.6);
+        }
+
+        #manualInputBtn {
+            background: linear-gradient(to right, #f97316, #ec4899, #f59e0b);
+            border-color: rgba(249, 115, 22, 0.5);
+        }
+
+        #manualInputBtn:hover {
+            box-shadow: 0 0 30px rgba(249, 115, 22, 0.6);
+        }
+
+        .dictionary-input-area {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            background: rgba(15, 23, 42, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dictionary-input-area input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .dictionary-input-area input:focus {
+            outline: none;
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
+        }
+
+        .dictionary-words {
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .word-tag {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem;
+            background: linear-gradient(to right, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2));
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #e9d5ff;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .word-tag .remove {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .word-tag .remove:hover {
+            opacity: 1;
+            color: #ef4444;
+        }
+
+        /* Results Panel */
+        .stats-card {
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(to bottom right, rgba(6, 182, 212, 0.2), rgba(168, 85, 247, 0.2));
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            margin-bottom: 1rem;
+            position: relative;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom right, rgba(34, 211, 238, 0.1), rgba(167, 139, 250, 0.1));
+            border-radius: 0.75rem;
+            filter: blur(20px);
+        }
+
+        .stats-content {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats-label {
+            color: #cbd5e1;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stats-value {
+            background: linear-gradient(to right, #a5f3fc, #bfdbfe, #ddd6fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .control-group select {
+            background: transparent;
+            color: white;
+            border: none;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .control-group select:focus {
+            outline: none;
+        }
+
+        /* Results List */
+        .results-list {
+            max-height: 600px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .result-card {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .result-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.02);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .result-card.selected {
+            background: linear-gradient(to right, rgba(6, 182, 212, 0.3), rgba(168, 85, 247, 0.3));
+            border: 2px solid #22d3ee;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.3);
+        }
+
+        .result-word {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-word h3 {
+            font-size: 1.125rem;
+            letter-spacing: 0.05em;
+        }
+
+        .word-length {
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            background: linear-gradient(to right, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3));
+            color: #a5f3fc;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(34, 211, 238, 0.4);
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 1rem;
+            color: #94a3b8;
+            font-size: 0.75rem;
+        }
+
+        .result-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 5rem 2rem;
+            color: #94a3b8;
+        }
+
+        .empty-state h3 {
+            color: white;
+            margin: 1rem 0 0.5rem;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 5rem 2rem;
+        }
+
+        .loading-spinner {
+            width: 64px;
+            height: 64px;
+            border: 4px solid #334155;
+            border-top-color: #22d3ee;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            animation: spin 2s linear infinite;
+        }
+
+        .loading-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22d3ee;
+            animation: bounce 0.6s ease-in-out infinite;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.5);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(71, 85, 105, 0.7);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.3;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Grid Size Modal -->
+    <div id="gridSizeModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-content">
+                <h2>⚙️ Configure Grid Size</h2>
+                <p class="modal-subtitle">Choose a preset or enter custom dimensions (3-30)</p>
+                
+                <div class="presets">
+                    <button class="preset-btn" data-size="5">5×5</button>
+                    <button class="preset-btn" data-size="8">8×8</button>
+                    <button class="preset-btn active" data-size="10">10×10</button>
+                    <button class="preset-btn" data-size="12">12×12</button>
+                    <button class="preset-btn" data-size="15">15×15</button>
+                    <button class="preset-btn" data-size="20">20×20</button>
+                </div>
+
+                <div class="custom-inputs">
+                    <div class="input-group">
+                        <label>Rows</label>
+                        <input type="number" id="rowsInput" min="3" max="30" value="10">
+                    </div>
+                    <div class="input-group">
+                        <label>Columns</label>
+                        <input type="number" id="colsInput" min="3" max="30" value="10">
+                    </div>
+                </div>
+
+                <div class="grid-preview">
+                    <p>Grid Preview</p>
+                    <div class="size" id="previewSize">10 × 10</div>
+                    <div class="total" id="previewTotal">100 cells total</div>
+                </div>
+
+                <button class="btn" id="createGridBtn">🎯 Create Grid</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1> Word Puzzle Solver </h1>
+            <p>Build your puzzle, upload a dictionary, and discover hidden words</p>
+        </div>
+
+        <div class="main-grid">
+            <!-- Left Panel -->
+            <div>
+                <!-- Puzzle Grid Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="title-bar"></div>
+                            <span>Puzzle Grid <span class="grid-size-badge" id="gridSizeBadge"></span></span>
+                        </div>
+                        <button class="resize-btn" id="resizeBtn">⚙️ Resize</button>
+                    </div>
+                    
+                    <div class="puzzle-container">
+                        <div class="grid-wrapper">
+                            <div class="puzzle-grid" id="puzzleGrid"></div>
+                        </div>
+                        <div class="grid-tip">Tip: Use arrow keys to navigate • Paste text to auto-fill</div>
+                        
+                        <button class="find-words-btn" id="findWordsBtn">
+                            <div class="btn-content"> 
+                                <span id="findBtnText">Find Words</span>
+                            </div>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- Dictionary Card -->
+                <div class="card" style="margin-top: 1.5rem;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="title-bar" style="background: linear-gradient(to bottom, #a78bfa, #ec4899);"></div>
+                            <span>Dictionary (<span id="dictCount">8</span> words)</span>
+                        </div>
+                        
+                    </div>
+                    <button class="find-words-btn" id="checkApiBtn" style="margin-top:10px; background:linear-gradient(to right,#22c55e,#06b6d4);">
+                        🌐 Check Meaning
+                        </button>
+                        
+                    <div class="dictionary-controls">
+                        <button id="uploadBtn">📤 Upload Dictionary</button>
+                        <button id="manualInputBtn">✏️ Manual Input</button>
+                    </div>
+                    <input type="file" id="fileInput" accept=".json,.csv,.txt" class="hidden">
+
+                    <div id="dictionaryInputArea" class="dictionary-input-area hidden">
+                        <input type="text" id="wordInput" placeholder="Add words (comma or space separated)">
+                        <button class="btn-secondary" id="addWordsBtn" style="margin-top: 0.5rem; color: white;">Add Words</button>
+                        <div class="dictionary-words" id="dictionaryWords"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Results -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="title-bar" style="background: linear-gradient(to bottom, #60a5fa, #a78bfa);"></div>
+                        <span>Results</span>
+                    </div>
+                </div>
+
+                <div id="statsCard" class="stats-card hidden">
+                    <div class="stats-content">
+                        <div>
+                            <div class="stats-label">Total Words Found</div>
+                            <div class="stats-value" id="totalWordsFound">0</div>
+                        </div>
+                        <div style="font-size: 2.5rem;">🏆</div>
+                    </div>
+                </div>
+
+                <div id="controls" class="controls hidden">
+                    <div class="control-group">
+                        <span>📊</span>
+                        <select id="sortBy">
+                            <option value="alphabetical">A-Z</option>
+                            <option value="length">Length</option>
+                            <option value="direction">Direction</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <span>🔍</span>
+                        <select id="filterDirection">
+                            <option value="all">All Directions</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="loadingState" class="loading-state hidden">
+                    <div class="loading-spinner"></div>
+                    <p style="color: #94a3b8;">Searching for words...</p>
+                    <div class="loading-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+
+                <div id="emptyState" class="empty-state">
+                    <div style="font-size: 3rem; opacity: 0.3;">📈</div>
+                    <h3>No words found yet</h3>
+                    <p>Fill in the puzzle grid and click "Find Words" to discover hidden words</p>
+                </div>
+
+                <div id="resultsList" class="results-list"></div>
+                <div id="apiCard" class="result-card hidden" style="margin-top:15px;">
+    <h3 id="apiWord">WORD</h3>
+    <p id="apiMeaning">Meaning will appear here...</p>
+</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let gridSize = { rows: 0, cols: 0 };
+        let grid = [];
+        let dictionary = new Set(['WORD', 'PUZZLE', 'SOLVER', 'CODE', 'REACT', 'GRID', 'SEARCH', 'FIND']);
+        let foundWords = [];
+        let selectedWord = null;
+
+        // DOM Elements
+        const gridSizeModal = document.getElementById('gridSizeModal');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+        const rowsInput = document.getElementById('rowsInput');
+        const colsInput = document.getElementById('colsInput');
+        const previewSize = document.getElementById('previewSize');
+        const previewTotal = document.getElementById('previewTotal');
+        const createGridBtn = document.getElementById('createGridBtn');
+        const puzzleGrid = document.getElementById('puzzleGrid');
+        const gridSizeBadge = document.getElementById('gridSizeBadge');
+        const resizeBtn = document.getElementById('resizeBtn');
+        const findWordsBtn = document.getElementById('findWordsBtn');
+        const findBtnText = document.getElementById('findBtnText');
+        const dictCount = document.getElementById('dictCount');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const manualInputBtn = document.getElementById('manualInputBtn');
+        const fileInput = document.getElementById('fileInput');
+        const dictionaryInputArea = document.getElementById('dictionaryInputArea');
+        const wordInput = document.getElementById('wordInput');
+        const addWordsBtn = document.getElementById('addWordsBtn');
+        const dictionaryWords = document.getElementById('dictionaryWords');
+        const statsCard = document.getElementById('statsCard');
+        const totalWordsFound = document.getElementById('totalWordsFound');
+        const controls = document.getElementById('controls');
+        const sortBy = document.getElementById('sortBy');
+        const filterDirection = document.getElementById('filterDirection');
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        const resultsList = document.getElementById('resultsList');
+
+        // Initialize
+        updateDictionaryDisplay();
+
+        // Grid Size Modal
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const size = parseInt(btn.dataset.size);
+                rowsInput.value = size;
+                colsInput.value = size;
+                updatePreview();
+                presetBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        rowsInput.addEventListener('input', () => {
+            rowsInput.value = Math.max(3, Math.min(30, parseInt(rowsInput.value) || 3));
+            updatePreview();
+            updatePresetSelection();
+        });
+
+        colsInput.addEventListener('input', () => {
+            colsInput.value = Math.max(3, Math.min(30, parseInt(colsInput.value) || 3));
+            updatePreview();
+            updatePresetSelection();
+        });
+
+        function updatePreview() {
+            const rows = parseInt(rowsInput.value);
+            const cols = parseInt(colsInput.value);
+            previewSize.textContent = `${rows} × ${cols}`;
+            previewTotal.textContent = `${rows * cols} cells total`;
+        }
+
+        function updatePresetSelection() {
+            const rows = parseInt(rowsInput.value);
+            const cols = parseInt(colsInput.value);
+            presetBtns.forEach(btn => {
+                const size = parseInt(btn.dataset.size);
+                btn.classList.toggle('active', size === rows && size === cols);
+            });
+        }
+
+        createGridBtn.addEventListener('click', () => {
+            const rows = parseInt(rowsInput.value);
+            const cols = parseInt(colsInput.value);
+            createGrid(rows, cols);
+            gridSizeModal.classList.add('hidden');
+        });
+
+        resizeBtn.addEventListener('click', () => {
+            rowsInput.value = gridSize.rows;
+            colsInput.value = gridSize.cols;
+            updatePreview();
+            updatePresetSelection();
+            gridSizeModal.classList.remove('hidden');
+        });
+
+        // Create Grid
+        function createGrid(rows, cols) {
+            gridSize = { rows, cols };
+            grid = Array(rows).fill(null).map(() => Array(cols).fill(''));
+            foundWords = [];
+            selectedWord = null;
+            
+            gridSizeBadge.textContent = `(${rows}×${cols})`;
+            renderGrid();
+            updateResults();
+        }
+
+        function renderGrid() {
+            puzzleGrid.innerHTML = '';
+            const cellClass = gridSize.rows <= 10 && gridSize.cols <= 10 ? '' : 
+                             gridSize.rows <= 15 && gridSize.cols <= 15 ? 'small' : 'tiny';
+
+            for (let row = 0; row < gridSize.rows; row++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'grid-row';
+                
+                for (let col = 0; col < gridSize.cols; col++) {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.maxLength = 1;
+                    input.className = `grid-cell ${cellClass}`;
+                    input.dataset.row = row;
+                    input.dataset.col = col;
+                    input.value = grid[row][col];
+                    
+                    input.addEventListener('input', (e) => handleCellInput(e, row, col));
+                    input.addEventListener('keydown', (e) => handleKeyDown(e, row, col));
+                    input.addEventListener('paste', (e) => handlePaste(e, row, col));
+                    
+                    rowDiv.appendChild(input);
+                }
+                
+                puzzleGrid.appendChild(rowDiv);
+            }
+        }
+
+        function handleCellInput(e, row, col) {
+            const value = e.target.value.toUpperCase();
+            grid[row][col] = value;
+            e.target.value = value;
+            
+            if (value) {
+                // Auto-focus next cell
+                if (col < gridSize.cols - 1) {
+                    const nextCell = document.querySelector(`[data-row="${row}"][data-col="${col + 1}"]`);
+                    nextCell?.focus();
+                } else if (row < gridSize.rows - 1) {
+                    const nextCell = document.querySelector(`[data-row="${row + 1}"][data-col="0"]`);
+                    nextCell?.focus();
+                }
+            }
+        }
+
+        function handleKeyDown(e, row, col) {
+            switch (e.key) {
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (row > 0) {
+                        document.querySelector(`[data-row="${row - 1}"][data-col="${col}"]`)?.focus();
+                    }
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (row < gridSize.rows - 1) {
+                        document.querySelector(`[data-row="${row + 1}"][data-col="${col}"]`)?.focus();
+                    }
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    if (col > 0) {
+                        document.querySelector(`[data-row="${row}"][data-col="${col - 1}"]`)?.focus();
+                    }
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    if (col < gridSize.cols - 1) {
+                        document.querySelector(`[data-row="${row}"][data-col="${col + 1}"]`)?.focus();
+                    }
+                    break;
+                case 'Backspace':
+                    if (!grid[row][col]) {
+                        e.preventDefault();
+                        if (col > 0) {
+                            document.querySelector(`[data-row="${row}"][data-col="${col - 1}"]`)?.focus();
+                        } else if (row > 0) {
+                            document.querySelector(`[data-row="${row - 1}"][data-col="${gridSize.cols - 1}"]`)?.focus();
+                        }
+                    }
+                    break;
+            }
+        }
+
+        function handlePaste(e, startRow, startCol) {
+            e.preventDefault();
+            const text = e.clipboardData.getData('text').toUpperCase().replace(/\s/g, '');
+            let idx = 0;
+            
+            for (let r = startRow; r < gridSize.rows && idx < text.length; r++) {
+                for (let c = (r === startRow ? startCol : 0); c < gridSize.cols && idx < text.length; c++) {
+                    if (/[A-Z]/.test(text[idx])) {
+                        grid[r][c] = text[idx];
+                    }
+                    idx++;
+                }
+            }
+            
+            renderGrid();
+        }
+
+        // Find Words
+        findWordsBtn.addEventListener('click', findWords);
+        function getGrid() {
+    const inputs = document.querySelectorAll(".grid-cell"); // ✅ FIXED
+
+    let rows = gridSize.rows;
+    let cols = gridSize.cols;
+    let gridData = [];
+
+    for (let i = 0; i < rows; i++) {
+        let row = [];
+        for (let j = 0; j < cols; j++) {
+            let input = document.querySelector(`[data-row="${i}"][data-col="${j}"]`);
+            let val = input ? input.value : "";
+
+            if (!val) val = "";
+
+            row.push(val.toLowerCase());
+        }
+        gridData.push(row);
+    }
+
+    return gridData;
+   }
+async function findWords() {
+    const gridData = getGrid(); // MUST be here
+
+    console.log("GRID:", gridData);
+
+    try {
+        const res = await fetch("https://wordsolver.onrender.com/solve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+        grid: gridData,
+        dictionary: Array.from(dictionary)
+        })
+        });
+
+        const data = await res.json();
+
+        if (!data.words) {
+            alert("Backend error!");
+            console.log(data);
+            return;
+        }
+        if (!data || !data.words) {
+        alert("Backend error or empty result");
+        console.log(data);
+        return;
+        }
+        foundWords = data.words.map(word => ({
+            word: word,
+            positions: [],
+            direction: "API"
+        }));
+
+        updateResults();
+
+    } catch (err) {
+        console.error(err);
+        alert("Backend not connected!");
+    }
+}
+        // Dictionary Management
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const text = event.target.result;
+                try {
+                    const data = JSON.parse(text);
+                    const words = Array.isArray(data) ? data : (data.words || []);
+                    dictionary = new Set(words.map(w => w.toUpperCase()));
+                } catch {
+                    const words = text.split(/[,\n]/).map(w => w.trim().toUpperCase()).filter(w => w);
+                    dictionary = new Set(words);
+                }
+                updateDictionaryDisplay();
+            };
+            reader.readAsText(file);
+            fileInput.value = '';
+        });
+
+        manualInputBtn.addEventListener('click', () => {
+            dictionaryInputArea.classList.toggle('hidden');
+        });
+
+        addWordsBtn.addEventListener('click', () => {
+            const words = wordInput.value.split(/[,\s\n]+/)
+                .map(w => w.trim().toUpperCase())
+                .filter(w => w.length > 0);
+            
+            words.forEach(word => dictionary.add(word));
+            wordInput.value = '';
+            updateDictionaryDisplay();
+        });
+
+        wordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                addWordsBtn.click();
+            }
+        });
+
+        function updateDictionaryDisplay() {
+            dictCount.textContent = dictionary.size;
+            dictionaryWords.innerHTML = '';
+            
+            Array.from(dictionary).sort().forEach(word => {
+                const tag = document.createElement('div');
+                tag.className = 'word-tag';
+                tag.innerHTML = `
+                    <span>${word}</span>
+                    <span class="remove" data-word="${word}">×</span>
+                `;
+                tag.querySelector('.remove').addEventListener('click', () => {
+                    dictionary.delete(word);
+                    updateDictionaryDisplay();
+                });
+                dictionaryWords.appendChild(tag);
+            });
+        }
+
+        // Results
+        sortBy.addEventListener('change', updateResults);
+        filterDirection.addEventListener('change', updateResults);
+
+        function updateResults() {
+            if (foundWords.length === 0) {
+                statsCard.classList.add('hidden');
+                controls.classList.add('hidden');
+                resultsList.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            statsCard.classList.remove('hidden');
+            controls.classList.remove('hidden');
+            resultsList.classList.remove('hidden');
+            
+            totalWordsFound.textContent = foundWords.length;
+            
+            // Update filter options
+            const directions = [...new Set(foundWords.map(w => w.direction))];
+            filterDirection.innerHTML = '<option value="all">All Directions</option>';
+            directions.forEach(dir => {
+                const option = document.createElement('option');
+                option.value = dir;
+                option.textContent = dir;
+                filterDirection.appendChild(option);
+            });
+
+            // Sort and filter
+            let filtered = foundWords.filter(w => 
+                filterDirection.value === 'all' || w.direction === filterDirection.value
+            );
+
+            filtered.sort((a, b) => {
+                switch (sortBy.value) {
+                    case 'alphabetical':
+                        return a.word.localeCompare(b.word);
+                    case 'length':
+                        return b.word.length - a.word.length;
+                    case 'direction':
+                        return a.direction.localeCompare(b.direction);
+                    default:
+                        return 0;
+                }
+            });
+
+            // Render results
+            resultsList.innerHTML = '';
+            filtered.forEach(word => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                if (selectedWord && selectedWord.word === word.word && 
+                    JSON.stringify(selectedWord.positions) === JSON.stringify(word.positions)) {
+                    card.classList.add('selected');
+                }
+                
+                card.innerHTML = `
+                    <div class="result-word">
+                        <h3>${word.word}</h3>
+                        <span class="word-length">${word.word.length}</span>
+                    </div>
+                    <div class="result-meta">
+                        <span>⚪ ${word.direction}</span>
+                        <span>${word.direction}</span>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => {
+                    if (selectedWord === word) {
+                        selectedWord = null;
+                    } else {
+                        selectedWord = word;
+                    }
+                    updateHighlights();
+                    updateResults();
+                });
+                
+                resultsList.appendChild(card);
+            });
+        }
+
+        function updateHighlights() {
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.classList.remove('highlighted');
+            });
+
+            if (selectedWord) {
+                selectedWord.positions.forEach(pos => {
+                    const cell = document.querySelector(`[data-row="${pos.row}"][data-col="${pos.col}"]`);
+                    if (cell) {
+                        cell.classList.add('highlighted');
+                    }
+                });
+            }
+        }
+        // ===== API CHECK =====
+const checkApiBtn = document.getElementById("checkApiBtn");
+const apiCard = document.getElementById("apiCard");
+const apiWord = document.getElementById("apiWord");
+const apiMeaning = document.getElementById("apiMeaning");
+
+checkApiBtn.addEventListener("click", async () => {
+    if (!selectedWord) {
+        alert("Select a word from results first!");
+        return;
+    }
+
+    const word = selectedWord.word.toLowerCase();
+
+    apiCard.classList.remove("hidden");
+    apiWord.innerText = word.toUpperCase();
+    apiMeaning.innerText = "Loading...";
+
+    try {
+        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+
+        if (!res.ok) {
+            apiMeaning.innerText = "❌ Not a valid English word";
+            return;
+        }
+
+        const data = await res.json();
+
+        const meaning =
+            data[0]?.meanings[0]?.definitions[0]?.definition ||
+            "No definition found";
+
+        apiMeaning.innerText = "✅ " + meaning;
+
+    } catch (err) {
+        apiMeaning.innerText = "⚠️ Error fetching meaning";
+    }
+});
+    </script>
+</body>
+</html>
