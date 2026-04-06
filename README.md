@@ -24,7 +24,7 @@ The frontend communicates with a backend API to process and return results effic
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 * **Frontend:** HTML, CSS, JavaScript
 * **Backend:** Java (Spring Boot)
@@ -36,7 +36,7 @@ The frontend communicates with a backend API to process and return results effic
 
 ---
 
-## ⚙️ How It Works
+##  How It Works
 
 1. User creates a grid and inputs letters
 2. User adds words to the dictionary
@@ -80,7 +80,7 @@ The frontend communicates with a backend API to process and return results effic
 
 ##  Backend API
 
-👉 https://wordsolver.onrender.com/solve
+ https://wordsolver.onrender.com/solve
 
 ---
 
